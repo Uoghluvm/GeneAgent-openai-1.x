@@ -1,0 +1,2 @@
+MsigDB:69	====There are an error Error code: 400 - [{'error': {'code': 400, 'message': '* GenerateContentRequest.contents[1].parts[0].function_response.name: Name cannot be empty.\n', 'status': 'INVALID_ARGUMENT'}}] here.====
+//

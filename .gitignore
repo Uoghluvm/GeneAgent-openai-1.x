@@ -21,7 +21,7 @@ wheels/
 *.egg
 
 # Virtual Environment
-GeneAgentEnv/
+GenAgentEnv/
 venv/
 env/
 ENV/
