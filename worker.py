@@ -1,8 +1,4 @@
-import openai
-openai.api_type = "azure"
-openai.api_base = "***************"
-openai.api_version = "***************"
-openai.api_key = "**********************"
+from config import client
 
 import os
 import time
@@ -13,9 +9,12 @@ import logging
 from logging.handlers import RotatingFileHandler
 from datetime import datetime
 
-import tiktoken
+# Removed tiktoken dependency for Gemini compatibility
+# Simple character-based token estimation (rough approximation)
+def estimate_tokens(text):
+    return len(text) // 4  # Rough estimate: ~4 chars per token
+
 MAX_TOKENS = 127900
-encoding = tiktoken.encoding_for_model("gpt-4")
 
 from apis.get_complex_for_gene_set import get_complex_for_gene_set, get_complex_for_gene_set_doc 
 from apis.get_disease_for_single_gene import get_disease_for_single_gene, get_disease_for_single_gene_doc
@@ -58,8 +57,8 @@ class AgentPhD:
     	Put your decision at the beginning of the evidences.
     	Don't use any format symbols such as '*', '-' or other tokens.
     	"""
-		token_verification = encoding.encode(content + system)
-		print(f"=====The prompt tokens input to the verification step is {len(token_verification)}=====")
+		token_verification = estimate_tokens(content + system)
+		print(f"=====The prompt tokens input to the verification step is {token_verification}=====")
 		message_verification = [
 			{"role": "system", "content": system},
 			{"role": "user", "content": content} 
@@ -70,53 +69,54 @@ class AgentPhD:
 			loop += 1
 			# logger.info(f"Input@{loop}\n" +  json.dumps(messages, indent=4))
 			time.sleep(1)
-			completion = openai.ChatCompletion.create(
-				engine="gpt-4o",
+			completion = client.chat.completions.create(
+				model="gemini-2.5-flash",
 				messages=message_verification,
-				functions=self.function_docs,
+				tools=[{"type": "function", "function": func} for func in self.function_docs],
 				temperature=0,
 			)
 
-			message = completion.choices[0]["message"]
-			# token_message_output = encoding.encode(str(message))
+			message = completion.choices[0].message
+					# token_message_output = estimate_tokens(str(message))
 			# print(f"=====The message tokens output from the verification step is {len(token_message_output)}=====")
 			# logger.info(f"Output@{loop}\n" +  json.dumps(message, indent=4))
 
-			if "function_call" in message:
+			if message.tool_calls:
 				try:
-					function_name = message["function_call"]["name"]
-					function_params = json.loads(message["function_call"]["arguments"])
+					tool_call = message.tool_calls[0]
+					function_name = tool_call.function.name
+					function_params = json.loads(tool_call.function.arguments)
 					function_to_call = self.name2function[function_name]
 					function_response = function_to_call(**function_params)
 					function_response = f"Function has been called with params {function_params}, and returns {function_response}."
 
 					message_verification.append(
 						{
-							"role": "function",
-							"name": function_name,
+							"role": "tool",
+							"tool_call_id": tool_call.id,
 							"content": function_response
 						},
 					)
-					# token_message_verification = encoding.encode(str(message_verification))
+					# token_message_verification = estimate_tokens(str(message_verification))
 					# print(f"=====The message tokens input to verification step is {len(token_message_verification)}=====")
 
 				except Exception as E:
 					message_verification.append(
 						{
-							"role": "function",
-							"name": function_name,
+							"role": "tool",
+							"tool_call_id": tool_call.id,
 							"content": f"Function has been called with params {function_params}, but returned error: {E}. Please try again with the correct parameter.",
 						}
 					)
-					# token_message_verification = encoding.encode(str(message_verification))
+					# token_message_verification = estimate_tokens(str(message_verification))
 					# print(f"=====The message tokens input to verification step is {len(token_message_verification)}=====")
 			
 			else:
 				try:
-					if "Report: " in message["content"]:
-						report = message["content"].split("Report: ")[-1]
-						token_report = encoding.encode(report)
-						print(f"=====The output tokens of verification report in the verification step is {len(token_report)}=====")
+					if "Report: " in message.content:
+						report = message.content.split("Report: ")[-1]
+						token_report = estimate_tokens(report)
+						print(f"=====The output tokens of verification report in the verification step is {token_report}=====")
 						if re.match(pattern, report):
 							return report
 						else: 
@@ -129,7 +129,7 @@ class AgentPhD:
 								"content": f"please start a message with \"Report:\" and return your findings if you have obtained the verification information.",
 							}
 						)
-						# token_message_verification = encoding.encode(str(message_verification))
+						# token_message_verification = estimate_tokens(str(message_verification))
 						# print(f"=====The message tokens input to verification step is {len(token_message_verification)}=====")
       
 				except Exception as E:
@@ -139,7 +139,7 @@ class AgentPhD:
 							"content": f"Claim has been verified, but returned error: {E}. Please try it again.",
 						}
 					)
-					# token_message_verification = encoding.encode(str(message_verification))
+					# token_message_verification = estimate_tokens(str(message_verification))
 					# print(f"=====The message tokens input to verification step is {len(token_message_verification)}=====")
 					# print(E)
 

@@ -3,12 +3,7 @@ import time
 import re
 import pandas as pd
 
-import openai
-## Replace with your own OpenAI model and key
-openai.api_type = "azure"
-openai.api_base = "***************"
-openai.api_version = "*****************"
-openai.api_key = "**************************" 
+from config import client 
 
 
 ## topic verification
@@ -34,12 +29,12 @@ def topic_verification(genes, process_name, agentphd):
         {"role":"system", "content":system_verify},
         {"role":"user", "content":prompt_topic}
     ]
-    claims = openai.ChatCompletion.create(
-        engine="gpt-4o",
+    claims = client.chat.completions.create(
+        model="gemini-2.5-flash",
         messages=message,
         temperature=0.0,
-        )
-    claims = json.loads(claims.choices[0]["message"]["content"])
+    )
+    claims = json.loads(claims.choices[0].message.content)
     print("=====Topic Claim=====")
     print(claims)
     
@@ -64,14 +59,14 @@ def topic_verification(genes, process_name, agentphd):
     message.append(
         {"role":"user", "content":f"I have finished the verification for the process name, here is the verification report:{verification}\nPlease replace the process name with the most significant function of gene set.\nPlease start a message with \"Topic:\" and only return the brief revised name."}
     )
-    updated = openai.ChatCompletion.create(
-        engine="gpt-4o",
+    updated = client.chat.completions.create(
+        model="gemini-2.5-flash",
         messages=message,
         temperature=0.0,
-        )
+    )
 
     # messages.append(updated_topic.choices[0]["message"])
-    updated = updated.choices[0]["message"]["content"]
+    updated = updated.choices[0].message.content
 
     print("=====Updated Topic=====")
     print(updated)

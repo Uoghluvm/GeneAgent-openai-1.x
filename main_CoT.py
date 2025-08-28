@@ -2,12 +2,7 @@ import json
 import time
 import pandas as pd
 
-import openai
-## Replace with your own OpenAI model and key
-openai.api_type = "azure"
-openai.api_base = "***************"
-openai.api_version = "*****************"
-openai.api_key = "**************************" 
+from config import client 
 
 from worker import AgentPhD
 from topic import topic_verification
@@ -39,13 +34,13 @@ if __name__ == "__main__":
             {"role":"system", "content":system},
             {"role":"user", "content":prompt_baseline}
         ]
-        summary = openai.ChatCompletion.create(
-			engine="gpt-4o",
+        summary = client.chat.completions.create(
+			model="gemini-2.5-flash",
 			messages=messages,
 			temperature=0.0,
-			)
-        messages.append(summary.choices[0]["message"])
-        summary = summary.choices[0]["message"]["content"]
+		)
+        messages.append({"role": "assistant", "content": summary.choices[0].message.content})
+        summary = summary.choices[0].message.content
         with open("Outputs/Chain-of-Thought/MsigDB_Response_CoT.txt","a") as f_update:
             f_update.write(summary+"\n")
             f_update.write("//\n")

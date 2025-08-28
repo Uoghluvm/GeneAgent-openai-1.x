@@ -7,15 +7,28 @@ GeneAgent is a first-of-kinds language agent built upon GPT-4 to automatically i
   <img width="80%" src="https://github.com/ncbi-nlp/GeneAgent/blob/main/workflow.geneagent.svg">
 </p>
 
-# Requirement
+# Requirements
+## Core Dependencies
 	python 3.11.0
-	openai 0.28.0
-	torch  1.13.0
-	numpy  1.26.3
+	openai 1.102.0
+	torch 2.8.0
+	numpy 1.26.3
 	pandas 2.1.4
-	requests  2.31.0 
-	requests-oauthlib  1.3.1
- 	seaborn 0.13.2
+	requests 2.31.0
+	requests-oauthlib 1.3.1
+	seaborn 0.13.2
+
+## Additional Dependencies
+	matplotlib 3.10.5
+	tiktoken 0.11.0
+	pydantic 2.11.7
+	httpx 0.28.1
+	tqdm 4.67.1
+	pillow 11.3.0
+	networkx 3.5
+	regex 2025.7.34
+	certifi 2025.8.3
+	urllib3 2.5.0
 
 # Datasets
 - Gene Ontology: contain 1000 gene sets from the GO:BP branch of the gene ontology database

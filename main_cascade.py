@@ -4,14 +4,11 @@ import time
 from turtle import up
 import pandas as pd
 from tqdm import tqdm
+import os
 
-import openai
-openai.api_type = "azure"
-openai.api_base = "******************"
-openai.api_version = "*******************"
-openai.api_key = "*************************" 
+from config import client 
 
-from worker import AgentPhD
+from worker import AgentPhD, estimate_tokens
 
 
 ## baseline 
@@ -117,24 +114,29 @@ agentphd = AgentPhD(function_names=reposits)
 def GeneAgent(ID, genes):    
     genes = genes.replace("/",",").replace(" ",",")
     
+    # Create output directories if they don't exist
+    os.makedirs("Outputs/GPT-4", exist_ok=True)
+    os.makedirs("Outputs/GeneAgent/Cascade", exist_ok=True)
+    os.makedirs("Verification Reports/Cascade", exist_ok=True)
+    
     pattern = re.compile(r'^[a-zA-Z0-9,.;?!*()_-]+$')
     ## send genes to GPT-4 and generate the original template of process name and analysis
     try:
         prompt_baseline = baseline(genes)
         first_step = prompt_baseline + system
-        token_baseline = encoding.encode(first_step)
-        print(f"=====The prompt tokens input to the generation step is {len(token_baseline)}=====\n")
+        token_baseline = estimate_tokens(first_step)
+        print(f"=====The prompt tokens input to the generation step is {token_baseline}=====\n")
         messages = [
             {"role":"system", "content":system},
             {"role":"user", "content":prompt_baseline}
         ]
-        summary = openai.ChatCompletion.create(
-            engine="gpt-4o",
+        summary = client.chat.completions.create(
+            model="gemini-2.5-flash",
             messages=messages,
             temperature=0,
-            )
-        messages.append(summary.choices[0]["message"])
-        summary = summary.choices[0]["message"]["content"]
+        )
+        messages.append({"role": "assistant", "content": summary.choices[0].message.content})
+        summary = summary.choices[0].message.content
 
         with open("Outputs/GPT-4/MsigDB_Response_GPT4.txt","a") as f_summary:
             f_summary.write(summary+"\n")
@@ -149,13 +151,13 @@ def GeneAgent(ID, genes):
             {"role":"system", "content":system_verify},
             {"role":"user", "content":prompt_topic}
         ]
-        claims_topic = openai.ChatCompletion.create(
-            engine="gpt-4o",
+        claims_topic = client.chat.completions.create(
+            model="gemini-2.5-flash",
             messages=message_topic,
             temperature=0,
-            )
+        )
 
-        claims_topic = json.loads(claims_topic.choices[0]["message"]["content"])
+        claims_topic = json.loads(claims_topic.choices[0].message.content)
         with open("Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt","a") as f_claim:
             f_claim.write(str(claims_topic)+"\n")
             f_claim.write("&&\n")
@@ -180,13 +182,13 @@ def GeneAgent(ID, genes):
         messages.append(
             {"role":"user", "content": modification_prompt}
             )
-        updated_topic = openai.ChatCompletion.create(
-            engine="gpt-4o",
+        updated_topic = client.chat.completions.create(
+            model="gemini-2.5-flash",
             messages=messages,
             temperature=0,
         )
-        messages.append(updated_topic.choices[0]["message"])
-        updated_topic = updated_topic.choices[0]["message"]["content"] 
+        messages.append({"role": "assistant", "content": updated_topic.choices[0].message.content})
+        updated_topic = updated_topic.choices[0].message.content 
         print("=====Updated Topic=====")
         print(updated_topic)
         
@@ -199,13 +201,13 @@ def GeneAgent(ID, genes):
             {"role":"system", "content":system_verify},
             {"role":"user", "content":prompt_analysis}
         ]
-        claims_analysis = openai.ChatCompletion.create(
-            engine="gpt-4o",
+        claims_analysis = client.chat.completions.create(
+            model="gemini-2.5-flash",
             messages=analysis_message,
             temperature=0,
-            )
+        )
         
-        claims_analysis = json.loads(claims_analysis.choices[0]["message"]["content"])
+        claims_analysis = json.loads(claims_analysis.choices[0].message.content)
         with open("Verification Reports/Cascade/Claims_and_Verification_for_MsigDB.txt","a") as f_claim:
             f_claim.write(str(claims_analysis)+"\n")
             f_claim.write("&&\n")
@@ -231,13 +233,13 @@ def GeneAgent(ID, genes):
         messages.append(
             {"role":"assistant", "content":summarization_prompt }
         )
-        updated = openai.ChatCompletion.create(
-            engine="gpt-4o",
+        updated = client.chat.completions.create(
+            model="gemini-2.5-flash",
             messages=messages,
             temperature=0,
-            )
+        )
         
-        update = updated.choices[0]["message"]["content"]
+        update = updated.choices[0].message.content
         with open("Outputs/GeneAgent/Cascade/MsigDB_Final_Response_GeneAgent.txt","a") as f_final:
             f_final.write(update+"\n")
             f_final.write("//\n")

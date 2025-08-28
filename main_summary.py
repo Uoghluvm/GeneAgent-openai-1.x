@@ -3,12 +3,7 @@ import time
 import pandas as pd
 from datetime import datetime
 
-import openai
-## Replace with your own OpenAI model and key
-openai.api_type = "azure"
-openai.api_base = "***************"
-openai.api_version = "*****************"
-openai.api_key = "**************************" 
+from config import client 
 
 from worker import AgentPhD
 
@@ -106,13 +101,13 @@ if __name__ == "__main__":
             {"role":"system", "content":system},
             {"role":"user", "content":prompt}
         ]
-        summary = openai.ChatCompletion.create(
-			engine="gpt-4o",
+        summary = client.chat.completions.create(
+			model="gemini-2.5-flash",
 			messages=messages,
 			temperature=0,
-			)
+		)
 
-        summary = summary.choices[0]["message"]["content"]
+        summary = summary.choices[0].message.content
         with open("Outputs/EnrichedTermTest/gpt.geneagent.msigdb.summary.result.verification.txt","a") as f_summary:
             f_summary.write(summary+"\n")
             f_summary.write("//\n")
