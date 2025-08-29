@@ -1,0 +1,20 @@
+
+====GeneAgent (Cascade)====
+rouge1:0.0
+rouge2:0.0
+rougeL:0.0
+
+====GeneAgent (Cascade)====
+rouge1:0.0
+rouge2:0.0
+rougeL:0.0
+
+====GeneAgent (Cascade)====
+rouge1:0.0
+rouge2:0.0
+rougeL:0.0
+
+====GeneAgent (Cascade)====
+rouge1:0.0
+rouge2:0.0
+rougeL:0.0
